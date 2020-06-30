@@ -83,9 +83,16 @@ table(predict=ypred, truth=test$labs_qda[valid])
 mean(ypred==as.factor(as.numeric(test$labs_qda[valid])))
 
 
-#now doing it via kfolds and t-set and validation
+#calculating varibale importance
+w <- t(tune.out$best.model$coefs) %*% tune.out$best.model$SV    # weight vectors
+w <- apply(w, 2, function(v){sqrt(sum(v^2))})                   # weight
+w <- sort(w, decreasing = T)
 
+#max weight
+w_max<-(w[1])
 
+#normalized weights relative to the max
+w_norm<- w / w_max
 
-
-#
+#table for Latex
+xtable(as.matrix(w_norm), digits=3)
