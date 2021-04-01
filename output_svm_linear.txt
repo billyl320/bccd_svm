@@ -1,0 +1,291 @@
+
+R version 3.4.4 (2018-03-15) -- "Someone to Lean On"
+Copyright (C) 2018 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+[Previously saved workspace restored]
+
+> #r simple svm model
+> 
+> rm(list=ls())
+> 
+> 
+> library(xtable) #for table creation for latex
+> library(MASS)#for qda
+> library(plyr)#for obtaining means by factor
+> library(e1071)#for svm
+> library(scatterplot3d)#for 3d plot in r
+> #setting seed
+> set.seed(76976)
+> 
+> w = read.table('wbc_SHAPES.txt', sep=',', header=TRUE)
+> r = read.table('rbc_SHAPES.txt', sep=',', header=TRUE)
+> p = read.table('plates_SHAPES.txt', sep=',', header=TRUE)
+> 
+> data<-rbind(w, r, p)
+> 
+> #eis
+> ei_w = read.table('wbc.txt', sep=',', header=TRUE)
+> ei_r = read.table('rbc.txt', sep=',', header=TRUE)
+> ei_p = read.table('plates.txt', sep=',', header=TRUE)
+> 
+> ei = rbind(ei_p, ei_w, ei_r)
+> sp = ei[,1]/(ei[,1]+ei[,2])
+> 
+> labs<-as.factor(c(rep(1, dim(w)[1]),
++                   rep(2, dim(r)[1]),
++                   rep(3, dim(p)[1])    ) )
+> 
+> 
+> labs2<-as.factor(c(rep("WBC", dim(w)[1]),
++                   rep("RBC", dim(r)[1]),
++                   rep("Platelet", dim(p)[1])    ) )
+> 
+> #counts plot
+> temp<-as.data.frame(cbind(sp, ei, data))
+> 
+> #simple model to check if it is even possible to do well with svm
+> #using all of the data
+> 
+> test<-as.data.frame(cbind(as.factor(labs), temp))
+> colnames(test)[1]<-"labs_svm"
+> 
+> keep<-c(1:9)
+> 
+> #now let's tune the svm model using 5-folds on t-set and validaiton
+> 
+> keep1<-which(test$labs_svm==1)
+> keep2<-which(test$labs_svm==2)
+> keep3<-which(test$labs_svm==3)
+> 
+> valid_1<-sample(keep1, floor(length(keep1)*0.30) )
+> valid_2<-sample(keep2, floor(length(keep2)*0.30))
+> valid_3<-sample(keep3, floor(length(keep3)*0.30) )
+> 
+> valid<-c(valid_1, valid_2, valid_3)
+> 
+> tc <- tune.control(cross = 5)
+> 
+> tune.out<-tune(svm, as.factor(labs_svm) ~.,
++           data=test[-valid,keep],
++           kernel='linear',
++           ranges=list(cost=c(1, 1.01, 0.75, 0.50, 1.50) ) ,
++           tunecontrol = tc,
++           scale=TRUE)
+> 
+> summary(tune.out)
+
+Parameter tuning of ‘svm’:
+
+- sampling method: 5-fold cross validation 
+
+- best parameters:
+ cost
+    1
+
+- best performance: 0.006429761 
+
+- Detailed performance results:
+  cost       error  dispersion
+1 1.00 0.006429761 0.002448227
+2 1.01 0.006429761 0.002448227
+3 0.75 0.006429761 0.002448227
+4 0.50 0.006429761 0.001669640
+5 1.50 0.006721304 0.002655956
+
+> 
+> ypred=predict(tune.out$best.model ,test[-valid,])
+> table(predict=ypred, truth=test$labs_svm[-valid])
+       truth
+predict    1    2    3
+      1  253    1    0
+      2    7 2905    4
+      3    1    2  249
+> mean(ypred==as.factor(as.numeric(test$labs_svm[-valid])))
+[1] 0.9956166
+> 
+> ypred=predict(tune.out$best.model ,test[valid,])
+> table(predict=ypred, truth=test$labs_svm[valid])
+       truth
+predict    1    2    3
+      1  106    2    0
+      2    5 1242    3
+      3    0    1  105
+> mean(ypred==as.factor(as.numeric(test$labs_svm[valid])))
+[1] 0.9924863
+> 
+> #calculating varibale importance
+> w <- t(tune.out$best.model$coefs) %*% tune.out$best.model$SV    # weight vectors
+> w <- apply(w, 2, function(v){sqrt(sum(v^2))})                   # weight
+> w <- sort(w, decreasing = T)
+> 
+> #max weight
+> w_max<-(w[1])
+> 
+> #normalized weights relative to the max
+> w_norm<- w / w_max
+> 
+> #table for Latex
+> xtable(as.matrix(w_norm), digits=3)
+% latex table generated in R 3.4.4 by xtable 1.8-4 package
+% Thu Apr  1 13:57:18 2021
+\begin{table}[ht]
+\centering
+\begin{tabular}{rr}
+  \hline
+ & x \\ 
+  \hline
+Shape\_corn & 1.000 \\ 
+  sp & 0.934 \\ 
+  Shape\_e1 & 0.912 \\ 
+  black & 0.869 \\ 
+  Shape\_e2 & 0.773 \\ 
+  Shape\_circ & 0.661 \\ 
+  white & 0.324 \\ 
+  Shape\_eccent & 0.041 \\ 
+   \hline
+\end{tabular}
+\end{table}
+> 
+> #checking all above 0.90
+> keep3<-c(1, 2, 7, 9)
+> 
+> tune.out3<-tune(svm, as.factor(labs_svm) ~.,
++           data=test[-valid,keep],
++           kernel='linear',
++           ranges=list(cost=c(1, 1.01, 0.75, 0.50, 1.50) ) ,
++           tunecontrol = tc,
++           scale=TRUE)
+> 
+> summary(tune.out3)
+
+Parameter tuning of ‘svm’:
+
+- sampling method: 5-fold cross validation 
+
+- best parameters:
+ cost
+  0.5
+
+- best performance: 0.006429761 
+
+- Detailed performance results:
+  cost       error  dispersion
+1 1.00 0.007306954 0.003430943
+2 1.01 0.007306954 0.003430943
+3 0.75 0.007306954 0.003430943
+4 0.50 0.006429761 0.003813588
+5 1.50 0.007014983 0.003171683
+
+> 
+> ypred=predict(tune.out3$best.model ,test[-valid,])
+> table(predict=ypred, truth=test$labs_svm[-valid])
+       truth
+predict    1    2    3
+      1  252    2    0
+      2    8 2903    4
+      3    1    3  249
+> mean(ypred==as.factor(as.numeric(test$labs_svm[-valid])))
+[1] 0.9947399
+> 
+> ypred=predict(tune.out3$best.model ,test[valid,])
+> table(predict=ypred, truth=test$labs_svm[valid])
+       truth
+predict    1    2    3
+      1  106    3    0
+      2    5 1241    3
+      3    0    1  105
+> mean(ypred==as.factor(as.numeric(test$labs_svm[valid])))
+[1] 0.9918033
+> 
+> 
+> fit3<-svm(as.factor(labs_svm) ~.,
++           data=test[-valid,keep],
++           kernel='linear',
++           cost=c(1))
+> 
+> summary(fit3)
+
+Call:
+svm(formula = as.factor(labs_svm) ~ ., data = test[-valid, keep], 
+    kernel = "linear", cost = c(1))
+
+
+Parameters:
+   SVM-Type:  C-classification 
+ SVM-Kernel:  linear 
+       cost:  1 
+
+Number of Support Vectors:  117
+
+ ( 27 58 32 )
+
+
+Number of Classes:  3 
+
+Levels: 
+ 1 2 3
+
+
+
+> 
+> ypred=predict(fit3 ,test[-valid,])
+> table(predict=ypred, truth=test$labs_svm[-valid])
+       truth
+predict    1    2    3
+      1  253    1    0
+      2    7 2905    4
+      3    1    2  249
+> mean(ypred==as.factor(as.numeric(test$labs_svm[-valid])))
+[1] 0.9956166
+> 
+> ypred=predict(fit3 ,test[valid,])
+> table(predict=ypred, truth=test$labs_svm[valid])
+       truth
+predict    1    2    3
+      1  106    2    0
+      2    5 1242    3
+      3    0    1  105
+> mean(ypred==as.factor(as.numeric(test$labs_svm[valid])))
+[1] 0.9924863
+> 
+> 
+> colors <- c("#999999", "#E69F00", "#56B4E9")
+> colors <- colors[as.numeric(test$labs_svm)]
+> shapes = c(16, 17, 18)
+> shapes <- shapes[as.numeric(test$labs_svm)]
+> 
+> s3d<-scatterplot3d(test$sp, test$Shape_e1, test$Shape_corn,
++               main="3D Scatterplot of Blood Cells",
++               xlab="SP",
++               ylab="1st Eigenvalue",
++               zlab="# Corners",
++               pch=shapes,
++               color=colors)
+> legend(s3d$xyz.convert(0.1, 5000, 225), legend = levels(labs2),
++       col =  c("#999999", "#E69F00", "#56B4E9"), pch = c(16, 17, 18))
+> 
+> plot(test[,keep3],
++      col=colors,
++      pch=shapes,
++      labels=c("Blood Type", "SP", "1st Eigenvalue", "# Corners"))
+> 
+> #
+> 
+> proc.time()
+   user  system elapsed 
+  2.407   0.016   2.408 

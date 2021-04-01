@@ -23,6 +23,20 @@ pol<-c( (105/108),
         )
 mean(pol)
 
+lin<-c( 105/108,
+        106/110,
+        1242/(1242+2+1)
+      )
+
+mean(lin)
+
+lin3<-c( 105/108,
+        106/111,
+        1242/(1242+2+1)
+      )
+
+mean(lin3)
+
 #to hold outperformance for each
 vals<-c()
 
