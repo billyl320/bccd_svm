@@ -1,0 +1,199 @@
+
+R version 3.4.4 (2018-03-15) -- "Someone to Lean On"
+Copyright (C) 2018 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+[Previously saved workspace restored]
+
+> #r simple svm model
+> 
+> rm(list=ls())
+> 
+> 
+> library(xtable) #for table creation for latex
+> library(MASS)#for qda
+> library(plyr)#for obtaining means by factor
+> library(e1071)#for svm
+> 
+> #setting seed
+> set.seed(76976)
+> 
+> w = read.table('wbc_SHAPES.txt', sep=',', header=TRUE)
+> r = read.table('rbc_SHAPES.txt', sep=',', header=TRUE)
+> p = read.table('plates_SHAPES.txt', sep=',', header=TRUE)
+> 
+> data<-rbind(w, r, p)
+> 
+> #eis
+> ei_w = read.table('wbc.txt', sep=',', header=TRUE)
+> ei_r = read.table('rbc.txt', sep=',', header=TRUE)
+> ei_p = read.table('plates.txt', sep=',', header=TRUE)
+> 
+> ei = rbind(ei_p, ei_w, ei_r)
+> sp = ei[,1]/(ei[,1]+ei[,2])
+> 
+> labs<-as.factor(c(rep(1, dim(w)[1]),
++                   rep(2, dim(r)[1]),
++                   rep(3, dim(p)[1])    ) )
+> 
+> 
+> labs2<-as.factor(c(rep("Plate", dim(w)[1]),
++                   rep("White", dim(r)[1]),
++                   rep("Red", dim(p)[1])    ) )
+> 
+> #counts plot
+> temp<-as.data.frame(cbind(sp, ei, data))
+> 
+> #simple model to check if it is even possible to do well with svm
+> #using all of the data
+> 
+> test<-as.data.frame(cbind(as.factor(labs), temp))
+> colnames(test)[1]<-"labs_svm"
+> 
+> keep<-c(1:9)
+> 
+> #now let's tune the svm model using 5-folds on t-set and validaiton
+> 
+> keep1<-which(test$labs_svm==1)
+> keep2<-which(test$labs_svm==2)
+> keep3<-which(test$labs_svm==3)
+> 
+> valid_1<-sample(keep1, floor(length(keep1)*0.30) )
+> valid_2<-sample(keep2, floor(length(keep2)*0.30))
+> valid_3<-sample(keep3, floor(length(keep3)*0.30) )
+> 
+> valid<-c(valid_1, valid_2, valid_3)
+> 
+> tc <- tune.control(cross = 5)
+> 
+> tune.out<-tune(svm, as.factor(labs_svm) ~.,
++           data=test[-valid,keep],
++           kernel='radial',
++           ranges=list(cost=c(1, 1.01, 0.75, 0.50, 1.50),
++                       gamma=c(0.3, 0.305, 0.350, 0.375,
++                               0.31, 0.32, 0.33, 0.3305,
++                               0.3350, 0.3375, 0.3295, 0.3275, 0.34)) ,
++           tunecontrol = tc,
++           scale=TRUE)
+> 
+> summary(tune.out)
+
+Parameter tuning of ‘svm’:
+
+- sampling method: 5-fold cross validation 
+
+- best parameters:
+ cost gamma
+  1.5   0.3
+
+- best performance: 0.0073061 
+
+- Detailed performance results:
+   cost  gamma       error  dispersion
+1  1.00 0.3000 0.007890468 0.001962268
+2  1.01 0.3000 0.007890468 0.001962268
+3  0.75 0.3000 0.007598497 0.002402883
+4  0.50 0.3000 0.008474837 0.002401912
+5  1.50 0.3000 0.007306100 0.001464131
+6  1.00 0.3050 0.007890468 0.001962268
+7  1.01 0.3050 0.007890468 0.001962268
+8  0.75 0.3050 0.007598497 0.002402883
+9  0.50 0.3050 0.008767234 0.002067952
+10 1.50 0.3050 0.007306100 0.001464131
+11 1.00 0.3500 0.008474837 0.002401912
+12 1.01 0.3500 0.008474837 0.002401912
+13 0.75 0.3500 0.008474837 0.002401912
+14 0.50 0.3500 0.009059632 0.002403340
+15 1.50 0.3500 0.007306100 0.001464131
+16 1.00 0.3750 0.009058778 0.002399576
+17 1.01 0.3750 0.008766381 0.002307905
+18 0.75 0.3750 0.008474837 0.002401912
+19 0.50 0.3750 0.009352030 0.002219125
+20 1.50 0.3750 0.007890041 0.001306703
+21 1.00 0.3100 0.007890468 0.001962268
+22 1.01 0.3100 0.007890468 0.001962268
+23 0.75 0.3100 0.007598497 0.002402883
+24 0.50 0.3100 0.008767234 0.002067952
+25 1.50 0.3100 0.007306100 0.001464131
+26 1.00 0.3200 0.007890468 0.001962268
+27 1.01 0.3200 0.007890468 0.001962268
+28 0.75 0.3200 0.007890895 0.002656897
+29 0.50 0.3200 0.008767234 0.002067952
+30 1.50 0.3200 0.007306100 0.001464131
+31 1.00 0.3300 0.008182866 0.002218630
+32 1.01 0.3300 0.008182866 0.002218630
+33 0.75 0.3300 0.008182866 0.002218630
+34 0.50 0.3300 0.008767234 0.002067952
+35 1.50 0.3300 0.007306100 0.001464131
+36 1.00 0.3305 0.008182866 0.002218630
+37 1.01 0.3305 0.008182866 0.002218630
+38 0.75 0.3305 0.008182866 0.002218630
+39 0.50 0.3305 0.008767234 0.002067952
+40 1.50 0.3305 0.007306100 0.001464131
+41 1.00 0.3350 0.008182866 0.002218630
+42 1.01 0.3350 0.008182866 0.002218630
+43 0.75 0.3350 0.008474837 0.002401912
+44 0.50 0.3350 0.008767234 0.002067952
+45 1.50 0.3350 0.007306100 0.001464131
+46 1.00 0.3375 0.008182866 0.002218630
+47 1.01 0.3375 0.008182866 0.002218630
+48 0.75 0.3375 0.008474837 0.002401912
+49 0.50 0.3375 0.008767234 0.002067952
+50 1.50 0.3375 0.007306100 0.001464131
+51 1.00 0.3295 0.008182866 0.002218630
+52 1.01 0.3295 0.008182866 0.002218630
+53 0.75 0.3295 0.008182866 0.002218630
+54 0.50 0.3295 0.008767234 0.002067952
+55 1.50 0.3295 0.007306100 0.001464131
+56 1.00 0.3275 0.008182866 0.002218630
+57 1.01 0.3275 0.008182866 0.002218630
+58 0.75 0.3275 0.007890895 0.002656897
+59 0.50 0.3275 0.008767234 0.002067952
+60 1.50 0.3275 0.007306100 0.001464131
+61 1.00 0.3400 0.008182866 0.002218630
+62 1.01 0.3400 0.008182866 0.002218630
+63 0.75 0.3400 0.008474837 0.002401912
+64 0.50 0.3400 0.008767234 0.002067952
+65 1.50 0.3400 0.007306100 0.001464131
+
+> 
+> ypred=predict(tune.out$best.model ,test[-valid,])
+> table(predict=ypred, truth=test$labs_svm[-valid])
+       truth
+predict    1    2    3
+      1  259    1    0
+      2    1 2905    4
+      3    1    2  249
+> mean(ypred==as.factor(as.numeric(test$labs_svm[-valid])))
+[1] 0.99737
+> 
+> ypred=predict(tune.out$best.model ,test[valid,])
+> table(predict=ypred, truth=test$labs_svm[valid])
+       truth
+predict    1    2    3
+      1  108    0    0
+      2    3 1244    4
+      3    0    1  104
+> mean(ypred==as.factor(as.numeric(test$labs_svm[valid])))
+[1] 0.9945355
+> 
+> 
+> #
+> 
+> proc.time()
+   user  system elapsed 
+ 29.395   0.025  29.403 

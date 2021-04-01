@@ -59,12 +59,12 @@ valid<-c(valid_1, valid_2, valid_3)
 
 tc <- tune.control(cross = 5)
 
-tune.out<-tune.svm(as.factor(labs_svm) ~.,
+tune.out<-tune(svm, as.factor(labs_svm) ~.,
           data=test[-valid,keep],
-          kernel='poly',
-          cost=1,
-          coef0=c(1:5, 50),
-          degree=c(2:5),
+          kernel='sigmoid',
+          ranges=list(cost=c(1:5),
+                      coef0=c(0:5, 50),
+                      gamma=c(0.0001, 0.001, 0.01, 0.1, 1, 2, 3)),
           tunecontrol = tc,
           scale=TRUE)
 
