@@ -79,4 +79,47 @@ table(predict=ypred, truth=test$labs_svm[valid])
 mean(ypred==as.factor(as.numeric(test$labs_svm[valid])))
 
 
+#now only using 3 variables from linear model
+keep3<-c(1, 2, 6, 9)
+tune.out<-tune.svm(as.factor(labs_svm) ~.,
+          data=test[-valid,keep3],
+          kernel='poly',
+          cost=1,
+          coef0=c(1:5, 50),
+          degree=c(2:5),
+          tunecontrol = tc,
+          scale=TRUE)
+
+summary(tune.out)
+
+ypred=predict(tune.out$best.model ,test[-valid,])
+table(predict=ypred, truth=test$labs_svm[-valid])
+mean(ypred==as.factor(as.numeric(test$labs_svm[-valid])))
+
+ypred=predict(tune.out$best.model ,test[valid,])
+table(predict=ypred, truth=test$labs_svm[valid])
+mean(ypred==as.factor(as.numeric(test$labs_svm[valid])))
+
+#now only using 4 variables from linear model
+keep4<-c(1, 2, 4, 6, 9)
+tune.out<-tune.svm(as.factor(labs_svm) ~.,
+          data=test[-valid,keep4],
+          kernel='poly',
+          cost=1,
+          coef0=c(1:5, 50),
+          degree=c(2:5),
+          tunecontrol = tc,
+          scale=TRUE)
+
+summary(tune.out)
+
+ypred=predict(tune.out$best.model ,test[-valid,])
+table(predict=ypred, truth=test$labs_svm[-valid])
+mean(ypred==as.factor(as.numeric(test$labs_svm[-valid])))
+
+ypred=predict(tune.out$best.model ,test[valid,])
+table(predict=ypred, truth=test$labs_svm[valid])
+mean(ypred==as.factor(as.numeric(test$labs_svm[valid])))
+
+
 #

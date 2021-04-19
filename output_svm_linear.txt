@@ -142,7 +142,7 @@ predict    1    2    3
 > #table for Latex
 > xtable(as.matrix(w_norm), digits=3)
 % latex table generated in R 3.4.4 by xtable 1.8-4 package
-% Thu Apr  1 13:57:18 2021
+% Fri Apr 16 14:08:46 2021
 \begin{table}[ht]
 \centering
 \begin{tabular}{rr}
@@ -214,14 +214,15 @@ predict    1    2    3
 > 
 > 
 > fit3<-svm(as.factor(labs_svm) ~.,
-+           data=test[-valid,keep],
++           data=test[-valid,keep3],
 +           kernel='linear',
 +           cost=c(1))
+> 
 > 
 > summary(fit3)
 
 Call:
-svm(formula = as.factor(labs_svm) ~ ., data = test[-valid, keep], 
+svm(formula = as.factor(labs_svm) ~ ., data = test[-valid, keep3], 
     kernel = "linear", cost = c(1))
 
 
@@ -230,9 +231,9 @@ Parameters:
  SVM-Kernel:  linear 
        cost:  1 
 
-Number of Support Vectors:  117
+Number of Support Vectors:  356
 
- ( 27 58 32 )
+ ( 134 179 43 )
 
 
 Number of Classes:  3 
@@ -247,21 +248,103 @@ Levels:
 > table(predict=ypred, truth=test$labs_svm[-valid])
        truth
 predict    1    2    3
-      1  253    1    0
-      2    7 2905    4
-      3    1    2  249
+      1  166    6    0
+      2   94 2891   10
+      3    1   11  243
 > mean(ypred==as.factor(as.numeric(test$labs_svm[-valid])))
-[1] 0.9956166
+[1] 0.9643483
 > 
 > ypred=predict(fit3 ,test[valid,])
 > table(predict=ypred, truth=test$labs_svm[valid])
        truth
 predict    1    2    3
-      1  106    2    0
-      2    5 1242    3
-      3    0    1  105
+      1   64    6    0
+      2   47 1236    3
+      3    0    3  105
 > mean(ypred==as.factor(as.numeric(test$labs_svm[valid])))
-[1] 0.9924863
+[1] 0.9596995
+> 
+> #
+> fit3<-tune(svm, as.factor(labs_svm) ~.,
++           data=test[-valid,keep3],
++           kernel='linear',
++           ranges=list(cost=c(1, 1.01, 0.75, 0.50, 1.50) ) ,
++           tunecontrol = tc,
++           scale=TRUE)
+> 
+> #
+> ypred=predict(fit3$best.model ,test[-valid,])
+> table(predict=ypred, truth=test$labs_svm[-valid])
+       truth
+predict    1    2    3
+      1  165    6    0
+      2   95 2891   10
+      3    1   11  243
+> mean(ypred==as.factor(as.numeric(test$labs_svm[-valid])))
+[1] 0.9640561
+> 
+> ypred=predict(fit3$best.model ,test[valid,])
+> table(predict=ypred, truth=test$labs_svm[valid])
+       truth
+predict    1    2    3
+      1   64    6    0
+      2   47 1236    3
+      3    0    3  105
+> mean(ypred==as.factor(as.numeric(test$labs_svm[valid])))
+[1] 0.9596995
+> 
+> 
+> 
+> #checking all above 0.84
+> keep4<-c(1, 4, 7, 9)
+> 
+> tune.out4<-tune(svm, as.factor(labs_svm) ~.,
++           data=test[-valid,keep4],
++           kernel='linear',
++           ranges=list(cost=c(1, 1.01, 0.75, 0.50, 1.50) ) ,
++           tunecontrol = tc,
++           scale=TRUE)
+> 
+> summary(tune.out4)
+
+Parameter tuning of ‘svm’:
+
+- sampling method: 5-fold cross validation 
+
+- best parameters:
+ cost
+  1.5
+
+- best performance: 0.01198062 
+
+- Detailed performance results:
+  cost      error  dispersion
+1 1.00 0.01198105 0.002810654
+2 1.01 0.01198105 0.002810654
+3 0.75 0.01198105 0.002810654
+4 0.50 0.01198105 0.002810654
+5 1.50 0.01198062 0.002397634
+
+> 
+> ypred=predict(tune.out4$best.model ,test[-valid,])
+> table(predict=ypred, truth=test$labs_svm[-valid])
+       truth
+predict    1    2    3
+      1  250    7    0
+      2   10 2891   11
+      3    1   10  242
+> mean(ypred==as.factor(as.numeric(test$labs_svm[-valid])))
+[1] 0.9886032
+> 
+> ypred=predict(tune.out4$best.model ,test[valid,])
+> table(predict=ypred, truth=test$labs_svm[valid])
+       truth
+predict    1    2    3
+      1  106    5    0
+      2    5 1237    3
+      3    0    3  105
+> mean(ypred==as.factor(as.numeric(test$labs_svm[valid])))
+[1] 0.989071
 > 
 > 
 > colors <- c("#999999", "#E69F00", "#56B4E9")
@@ -279,13 +362,27 @@ predict    1    2    3
 > legend(s3d$xyz.convert(0.1, 5000, 225), legend = levels(labs2),
 +       col =  c("#999999", "#E69F00", "#56B4E9"), pch = c(16, 17, 18))
 > 
-> plot(test[,keep3],
+> #
+> s3d<-scatterplot3d(test$black, test$Shape_e1, test$Shape_corn,
++               main="3D Scatterplot of Blood Cells",
++               xlab="Black EI",
++               ylab="1st Eigenvalue",
++               zlab="# Corners",
++               pch=shapes,
++               color=colors,
++               angle=150)
+> legend(s3d$xyz.convert(66500, 5000, 225), legend = levels(labs2),
++       col =  c("#999999", "#E69F00", "#56B4E9"), pch = c(16, 17, 18))
+> 
+> 
+> 
+> plot(test[,keep4],
 +      col=colors,
 +      pch=shapes,
-+      labels=c("Blood Type", "SP", "1st Eigenvalue", "# Corners"))
++      labels=c("Blood Type", "SP", "Black EI","1st Eigenvalue", "# Corners"))
 > 
 > #
 > 
 > proc.time()
    user  system elapsed 
-  2.407   0.016   2.408 
+  4.083   0.021   4.086 

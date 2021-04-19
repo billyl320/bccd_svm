@@ -112,9 +112,10 @@ mean(ypred==as.factor(as.numeric(test$labs_svm[valid])))
 
 
 fit3<-svm(as.factor(labs_svm) ~.,
-          data=test[-valid,keep],
+          data=test[-valid,keep3],
           kernel='linear',
           cost=c(1))
+
 
 summary(fit3)
 
@@ -123,6 +124,45 @@ table(predict=ypred, truth=test$labs_svm[-valid])
 mean(ypred==as.factor(as.numeric(test$labs_svm[-valid])))
 
 ypred=predict(fit3 ,test[valid,])
+table(predict=ypred, truth=test$labs_svm[valid])
+mean(ypred==as.factor(as.numeric(test$labs_svm[valid])))
+
+#
+fit3<-tune(svm, as.factor(labs_svm) ~.,
+          data=test[-valid,keep3],
+          kernel='linear',
+          ranges=list(cost=c(1, 1.01, 0.75, 0.50, 1.50) ) ,
+          tunecontrol = tc,
+          scale=TRUE)
+
+#
+ypred=predict(fit3$best.model ,test[-valid,])
+table(predict=ypred, truth=test$labs_svm[-valid])
+mean(ypred==as.factor(as.numeric(test$labs_svm[-valid])))
+
+ypred=predict(fit3$best.model ,test[valid,])
+table(predict=ypred, truth=test$labs_svm[valid])
+mean(ypred==as.factor(as.numeric(test$labs_svm[valid])))
+
+
+
+#checking all above 0.84
+keep4<-c(1, 4, 7, 9)
+
+tune.out4<-tune(svm, as.factor(labs_svm) ~.,
+          data=test[-valid,keep4],
+          kernel='linear',
+          ranges=list(cost=c(1, 1.01, 0.75, 0.50, 1.50) ) ,
+          tunecontrol = tc,
+          scale=TRUE)
+
+summary(tune.out4)
+
+ypred=predict(tune.out4$best.model ,test[-valid,])
+table(predict=ypred, truth=test$labs_svm[-valid])
+mean(ypred==as.factor(as.numeric(test$labs_svm[-valid])))
+
+ypred=predict(tune.out4$best.model ,test[valid,])
 table(predict=ypred, truth=test$labs_svm[valid])
 mean(ypred==as.factor(as.numeric(test$labs_svm[valid])))
 
@@ -142,9 +182,23 @@ s3d<-scatterplot3d(test$sp, test$Shape_e1, test$Shape_corn,
 legend(s3d$xyz.convert(0.1, 5000, 225), legend = levels(labs2),
       col =  c("#999999", "#E69F00", "#56B4E9"), pch = c(16, 17, 18))
 
-plot(test[,keep3],
+#
+s3d<-scatterplot3d(test$black, test$Shape_e1, test$Shape_corn,
+              main="3D Scatterplot of Blood Cells",
+              xlab="Black EI",
+              ylab="1st Eigenvalue",
+              zlab="# Corners",
+              pch=shapes,
+              color=colors,
+              angle=150)
+legend(s3d$xyz.convert(66500, 5000, 225), legend = levels(labs2),
+      col =  c("#999999", "#E69F00", "#56B4E9"), pch = c(16, 17, 18))
+
+
+
+plot(test[,keep4],
      col=colors,
      pch=shapes,
-     labels=c("Blood Type", "SP", "1st Eigenvalue", "# Corners"))
+     labels=c("Blood Type", "SP", "Black EI","1st Eigenvalue", "# Corners"))
 
 #
