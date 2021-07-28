@@ -3,4 +3,5 @@ This paper presents a competitive solution for blood cell classification using s
 
 Please cite the following if you use the code and/or results from this GitHub:
 
-W. F. Lamberti, "SVM Model for Blood Cell Classification using Interpretable Features Outperforms CNN Based Approaches," in Symposium on Data Science and Statistics, 2020
+W. F. Lamberti, “Blood cell classification using interpretable shape features: A Comparative study of SVM models and CNN-Based approaches,” Computer Methods and Programs in Biomedicine Update, vol. 1, p. 100023, Jan. 2021, doi: 10.1016/j.cmpbup.2021.100023.
+
